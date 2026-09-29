@@ -1,0 +1,482 @@
+---
+title: "Tarea: Distribución Normal"
+subtitle: "Licenciatura en Economía Industrial"
+author: "Nataly Pamela Ramirez Cano"
+---
+
+```{=html}
+<style>
+main.content {
+text-align: justify}
+</style>
+```
+
+```{r septup,include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+library(moments)
+```
+
+::: {}
+### Análisis de Altura de Estudiantes
+
+Las alturas de estudiantes universitarios siguen una distribución normal con media $\mu = 170 cm$ y desviación estándar $\sigma = 8 cm$.
+
+1.  Simula una muestra de 500 estudiantes
+2.  Calcula la media, mediana y desviación estándar muestral
+3.  ¿Qué porcentaje de estudiantes mide más de 180 cm?
+4.  ¿Cuál es la altura del estudiante en el percentil 25?
+5.  Crea un histograma de la muestra con la densidad teórica superpuesta
+
+**Resolución**
+:::
+
+1.  Generamos los datos aleatorios.
+
+```{r}
+#| echo: false
+set.seed(123) # Para que los resultados sean reproducibles
+mu <- 170
+sigma <- 8
+n <- 500
+
+alturas <- rnorm(n, mean = mu, sd = sigma)
+head(alturas) # Muestra los primeros 6 valores
+```
+
+2.  Calculamos los estadísticos descriptivos básicos de la simulación.
+
+```{r}
+#| echo: false
+media_muestral <- mean(alturas)
+mediana_muestral <- median(alturas)
+desv_muestral <- sd(alturas)
+
+cat("Media:", media_muestral, "\nMediana:", mediana_muestral, "\nDesviación Estándar:", desv_muestral)
+```
+
+3.  Calculamos la probabilidad teórica o empírica.
+
+```{r}
+#| echo: false
+# Teórica
+p_teorica <- (1 - pnorm(180, mean = mu, sd = sigma)) * 100
+cat("Porcentaje teórico mayor a 180 cm:", p_teorica, "%\n")
+
+# Empírica (con la muestra)
+p_empirica <- (sum(alturas > 180) / n) * 100
+cat("Porcentaje empírico mayor a 180 cm:", p_empirica, "%")
+```
+
+4.  Utilizamos la función cuantil.
+
+```{r}
+#| echo: false
+percentil_25_teorico <- qnorm(0.25, mean = mu, sd = sigma)
+percentil_25_muestral <- quantile(alturas, 0.25)
+
+cat("Percentil 25 teórico:", percentil_25_teorico, "\n")
+cat("Percentil 25 muestral:", percentil_25_muestral)
+```
+
+5.  Graficamos el histograma de frecuencias relativas y la curva normal.
+
+```{r}
+#| echo: false
+hist(alturas, probability = TRUE, main = "Histograma de Alturas", 
+     xlab = "Altura (cm)", ylab = "Densidad", col = "lightblue", border = "white")
+
+# Curva teórica
+x_vals <- seq(min(alturas), max(alturas), length = 100)
+lines(x_vals, dnorm(x_vals, mean = mu, sd = sigma), col = "red", lwd = 2)
+```
+
+**Análisis e interpretación de resultados:**
+
+- **Estadísticos descriptivos:** La media y la mediana obtenidas en la simulación de 500 estudiantes son prácticamente idénticas a los 170 cm teóricos, lo cual demuestra que la muestra aleatoria es representativa y cumple con las propiedades de simetría de la distribución normal.
+
+- **Probabilidad superior (** 180 cm): Tanto el valor empírico como el teórico coinciden en que un porcentaje bajo de estudiantes (alrededor del 10%) supera el umbral de los 180 cm, ya que este valor se encuentra a más de una desviación estándar por encima de la media.
+
+- **Percentil 25:** El valor obtenido nos indica que la cuarta parte de los estudiantes evaluados poseen una estatura inferior a este límite (aproximadamente 164.6 cm), sirviendo como punto de corte para el estrato más bajo de la muestra.
+
+<br>
+
+::: {}
+### Temperatura Industrial
+
+Un proceso industrial debe mantener la temperatura a 350°C ± 10°C. Las temperaturas siguen $N(350, 5^2)$.
+
+1.  Simular un día de producción (1000 mediciones)
+2.  ¿Qué porcentaje del tiempo la temperatura está fuera de especificación?
+3.  Si el proceso se descentra a $\mu = 355°C$, ¿cómo cambia la calidad?
+4.  ¿Qué $\sigma$ se necesita para tener 99.9% de productos dentro de especificación?
+
+**Resolución**
+:::
+
+1.  Generamos los datos con media 350 y desviación estándar 5.
+
+```{r}
+#| echo: false
+set.seed(123)
+n_mediciones <- 1000
+mu_temp <- 350
+sigma_temp <- 5
+
+temperaturas <- rnorm(n_mediciones, mean = mu_temp, sd = sigma_temp)
+```
+
+2.  Considerando los límites de especificación de $350 \pm 10$ (es decir, entre 340 y 360).
+
+```{r}
+#| echo: false
+# Fuera de especificación es menor a 340 o mayor a 360
+fuera_inf <- pnorm(340, mean = mu_temp, sd = sigma_temp)
+fuera_sup <- (1 - pnorm(360, mean = mu_temp, sd = sigma_temp))
+p_fuera_teorico <- (fuera_inf + fuera_sup) * 100
+
+cat("Porcentaje teórico fuera de especificación:", p_fuera_teorico, "%\n")
+
+# Forma empírica
+p_fuera_empirico <- (sum(temperaturas < 340 | temperaturas > 360) / n_mediciones) * 100
+cat("Porcentaje empírico fuera de especificación:", p_fuera_empirico, "%")
+```
+
+3.  Evaluamos la nueva probabilidad de estar fuera de los límites originales \[340, 360\].
+
+```{r}
+#| echo: false
+mu_nuevo <- 355
+fuera_inf_nuevo <- pnorm(340, mean = mu_nuevo, sd = sigma_temp)
+fuera_sup_nuevo <- (1 - pnorm(360, mean = mu_nuevo, sd = sigma_temp))
+p_nuevo_fuera <- (fuera_inf_nuevo + fuera_sup_nuevo) * 100
+
+cat("Nuevo porcentaje fuera de especificación:", p_nuevo_fuera, "%")
+```
+
+4.  Buscamos la desviación estándar tal que el intervalo $[340, 360]$ cubra el 99.9% central (límites simétricos respecto a $\mu = 350$, por lo que la tolerancia tol = 10).
+
+```{r}
+#| echo: false
+# Queremos que P(340 <= X <= 360) = 0.999
+# Esto implica que la cola de un lado es (1 - 0.999) / 2 = 0.0005
+# Usamos la fórmula de cuantil de la normal estándar: tol = z * sigma -> sigma = tol / z
+z_val <- qnorm(0.9995)
+tol <- 10
+sigma_requerida <- tol / z_val
+
+cat("Desviación estándar necesaria:", sigma_requerida)
+```
+
+**Análisis e interpretación de resultados:**
+
+- **Defectos actuales:** El porcentaje de mediciones fuera del rango aceptable $[340, 360]^\circ\text{C}$ es sumamente bajo (menor al 3%), lo que valida que bajo las condiciones actuales el proceso industrial es sumamente estable y cumple con los estándares de calidad.
+
+- **Impacto del descentrado:** Si la temperatura media del proceso se desplazara por error a $355^\circ\text{C}$, el porcentaje de productos defectuosos aumentaría drásticamente, demostrando la alta sensibilidad de los procesos industriales a los cambios en la media.
+
+- **Optimización de la dispersión:** Para asegurar que el 99.9% de la producción caiga dentro de especificaciones con la misma tolerancia, la planta requeriría reducir la variabilidad del instrumento adquiriendo maquinaria más precisa con una desviación estándar menor a 3.03.
+
+<br>
+
+::: {}
+### Análisis de Ventas Mensuales
+
+Las ventas mensuales de una tienda siguen $N(50000, 12000^2)$ pesos.
+
+**Tareas**:
+
+1.  Simula las ventas de 24 meses
+2.  ¿Cuál es la probabilidad de tener ventas superiores a 60,000 pesos?
+3.  ¿En cuántos meses se espera tener ventas por debajo de 30,000 pesos?
+4.  Calcula el rango intercuartílico de las ventas
+5.  Si la meta es superar 45,000 pesos, ¿qué porcentaje de meses se cumple?
+
+**Resolución**
+:::
+
+1.  Generamos las observaciones aleatorias para dos años.
+
+```{r}
+#| echo: false
+set.seed(42) # Fijamos semilla para reproducibilidad
+mu_ventas <- 50000
+sigma_ventas <- 12000
+
+ventas_24m <- rnorm(24, mean = mu_ventas, sd = sigma_ventas)
+print(ventas_24m)
+```
+
+2.  Utilizamos la función de distribución acumulada
+
+```{r}
+#| echo: false
+prob_sup_60k <- 1 - pnorm(60000, mean = mu_ventas, sd = sigma_ventas)
+cat("Probabilidad de ventas > $60,000:", prob_sup_60k, "(", prob_sup_60k * 100, "%)\n")
+```
+
+3.  Calculamos la probabilidad teórica de un mes individual y la multiplicamos por el total de meses (24).
+
+```{r}
+#| echo: false
+prob_inf_30k <- pnorm(30000, mean = mu_ventas, sd = sigma_ventas)
+meses_esperados <- prob_inf_30k * 24
+cat("Número esperado de meses con ventas < $30,000:", meses_esperados, "\n")
+```
+
+4.  El rango intercuartílico (IQR) se puede obtener de forma teórica mediante los cuantiles de la normal o de forma muestral con la función `IQR()`.
+
+```{r}
+#| echo: false
+# Rango intercuartílico teórico
+iqr_teorico <- qnorm(0.75, mean = mu_ventas, sd = sigma_ventas) - qnorm(0.25, mean = mu_ventas, sd = sigma_ventas)
+# Rango intercuartílico de la simulación de 24 meses
+iqr_muestral <- IQR(ventas_24m)
+
+cat("IQR teórico:", iqr_teorico, "\n")
+cat("IQR muestral (de los 24 meses):", iqr_muestral, "\n")
+```
+
+5.  Calculamos la probabilidad de estar por encima de 45,000 expresada en porcentaje.
+
+```{r}
+#| echo: false
+porcentaje_meta <- (1 - pnorm(45000, mean = mu_ventas, sd = sigma_ventas)) * 100
+cat("Porcentaje de meses que se espera cumplir la meta:", porcentaje_meta, "%\n")
+```
+
+**Análisis e interpretación de resultados:**
+
+- **Probabilidad de metas altas:** Existe una probabilidad moderada (aproximadamente del 20.3%) de que en cualquier mes aleatorio las ventas rebasen los $\$60,000$ pesos, lo cual representa un buen escenario de alta demanda.
+
+- **Meses críticos:** Estadísticamente se espera que menos de un mes (o aproximadamente 1 mes) dentro de un horizonte de dos años (24 meses) presente ventas críticas inferiores a $\$30,000$ pesos, indicando que el negocio tiene un soporte financiero sólido.
+
+- **Variabilidad central:** El Rango Intercuartílico nos muestra que el 50% central de las ventas mensuales oscila en una franja de poco más de $\$16,000$ pesos alrededor de su tendencia central, permitiendo una planeación financiera estable.
+
+<br>
+
+::: {}
+### Tiempo de Vida de Baterías
+
+La duración de baterías sigue $N(1200, 150^2)$ horas.
+
+1.  Simula la vida útil de 800 baterías
+2.  ¿Qué garantía (en horas) cubre al 95% de las baterías?
+3.  Si se venden 10,000 baterías con garantía de 900 horas, ¿cuántas se espera que fallen?
+4.  Compara la media y mediana de tu simulación con los valores teóricos
+5.  ¿Cuál es el percentil 10 de la distribución?
+
+**Resolución**
+:::
+
+1.  Generamos la muestra aleatoria
+
+```{r}
+#| echo: false
+set.seed(42) # Para reproducibilidad
+mu_bateria <- 1200
+sigma_bateria <- 150
+n_baterias <- 800
+
+baterias <- rnorm(n_baterias, mean = mu_bateria, sd = sigma_bateria)
+head(baterias) # Muestra los primeros valores simulados
+```
+
+2.  Cubrir al 95% significa que solo el 5% restante fallará antes de ese tiempo, lo que corresponde al percentil 5.
+
+```{r}
+#| echo: false
+garantia_95 <- qnorm(0.05, mean = mu_bateria, sd = sigma_bateria)
+cat("La garantía que cubre al 95% es de:", garantia_95, "horas\n")
+```
+
+3.  Calculamos la probabilidad teórica de fallar antes de 900 horas y la multiplicamos por el tamaño del lote nuevo.
+
+```{r}
+#| echo: false
+prob_falla_900 <- pnorm(900, mean = mu_bateria, sd = sigma_bateria)
+baterias_fallidas <- prob_falla_900 * 10000
+cat("Número esperado de baterías fallidas:", round(baterias_fallidas, 0), "\n")
+```
+
+4.  En una distribución normal simétrica, la media y la mediana teóricas son iguales a u.
+
+```{r}
+#| echo: false
+media_muestral_b <- mean(baterias)
+mediana_muestral_b <- median(baterias)
+
+cat("Media teórica:", mu_bateria, "vs Media muestral:", round(media_muestral_b, 2), "\n")
+cat("Mediana teórica:", mu_bateria, "vs Mediana muestral:", round(mediana_muestral_b, 2), "\n")
+```
+
+5.  Utilizamos la función de cuantiles `qnorm()` para hallar el valor que acumula el 10% inferior.
+
+```{r}
+#| echo: false
+percentil_10 <- qnorm(0.10, mean = mu_bateria, sd = sigma_bateria)
+cat("El percentil 10 de la distribución es:", percentil_10, "horas\n")
+```
+
+**Análisis e interpretación de resultados:**
+
+- **Política de garantías:** Para respaldar comercialmente al 95% de los clientes y asegurar que solo un 5% de las baterías fallen dentro del periodo protegido, el fabricante debe fijar la garantía exactamente en 953.27 horas.
+
+- **Control de devoluciones:** Al comercializar un lote masivo de 10,000 unidades con una política de protección más estricta de 900 horas, el modelo predice que alrededor de 228 clientes exigirán válida su garantía por fallas prematuras.
+
+- **Durabilidad extrema:** El percentil 10 establece el umbral del 10% de baterías con menor tiempo de vida (907.76 horas), sirviendo de referencia interna para el departamento de control de calidad.
+
+<br>
+
+::: {}
+### Análisis de Errores de Medición
+
+Los errores de un instrumento de medición siguen $N(0, 2.5^5)$ unidades.
+
+1.  Simula 1000 mediciones
+2.  ¿Qué porcentaje de errores está entre -5 y +5 unidades?
+3.  Calcula la probabilidad de que un error sea mayor a 6 unidades en valor absoluto
+4.  Si se considera "preciso" un error ≤ 3 unidades, ¿qué porcentaje de mediciones son precisas?
+5.  Verifica que la distribución es simétrica alrededor de 0
+
+**Resolución**
+:::
+
+1.  Generamos los datos de error con media 0.
+
+```{r}
+#| echo: false
+set.seed(123)
+mu_error <- 0
+sigma_error <- 2.5
+n_med <- 1000
+
+errores <- rnorm(n_med, mean = mu_error, sd = sigma_error)
+```
+
+2.  Calculamos la probabilidad teórica mediante la diferencia de funciones de distribución acumulada.
+
+```{r}
+#| echo: false
+p_5_teorico <- (pnorm(5, mean = mu_error, sd = sigma_error) - pnorm(-5, mean = mu_error, sd = sigma_error)) * 100
+p_5_empirico <- (sum(errores >= -5 & errores <= 5) / n_med) * 100
+
+cat("Porcentaje teórico entre -5 y +5:", p_5_teorico, "%\n")
+cat("Porcentaje empírico entre -5 y +5:", p_5_empirico, "%\n")
+```
+
+3.  El valor absoluto implica evaluar las colas: $X < -6$ o $X > 6$.
+
+```{r}
+#| echo: false
+prob_abs_6 <- (pnorm(-6, mean = mu_error, sd = sigma_error) + (1 - pnorm(6, mean = mu_error, sd = sigma_error))) * 100
+cat("Probabilidad teórica de |Error| > 6:", prob_abs_6, "%\n")
+```
+
+4.  Evaluamos el intervalo central [-3, 3]
+
+```{r}
+#| echo: false
+porcentaje_preciso <- (pnorm(3, mean = mu_error, sd = sigma_error) - pnorm(-3, mean = mu_error, sd = sigma_error)) * 100
+cat("Porcentaje de mediciones precisas (<= 3 unidades):", porcentaje_preciso, "%\n")
+```
+
+5.  Calculamos la media y la mediana muestrales para comprobar la simetría central.
+
+```{r}
+#| echo: false
+cat("Media muestral:", mean(errores), "\n")
+cat("Mediana muestral:", median(errores), "\n")
+```
+
+Ambos valores deben ser extremadamente cercanos a 0.
+
+**Análisis e interpretación de resultados:**
+
+- **Comportamiento del intervalo central:** Prácticamente el 95.45% de las mediciones del instrumento se concentran de forma estable dentro de un margen de $\pm 5$ unidades, lo que valida empíricamente la regla empírica de las dos desviaciones estándar.
+
+- **Margen de tolerancia estricto:** Definir como "preciso" un error menor o igual a 3 unidades nos deja con un rendimiento instrumental del 76.98%, útil para saber qué porcentaje de lecturas cumplen con estándares rigurosos de laboratorio.
+
+- **Ausencia de sesgo:** Los estadísticos de tendencia central (media y mediana cercanas a 0) confirman que el instrumento de medición está perfectamente calibrado y no presenta desvíos sistemáticos hacia lecturas positivas o negativas.
+
+<br>
+
+::: {}
+### Puntuaciones de Examen Comparativo
+
+Dos grupos toman el mismo examen. Grupo A: $N(75, 10^2)$, Grupo B: $N(82, 8^2)$.
+
+1.  Simula 200 estudiantes de cada grupo
+2.  ¿Qué porcentaje de estudiantes del Grupo A supera la media del Grupo B?
+3.  ¿Cuál es la probabilidad de que un estudiante del Grupo B tenga puntuación menor a 70?
+4.  Compara las distribuciones visualmente
+5.  ¿A partir de qué puntuación está el 10% superior de cada grupo?
+
+**Resolución**
+:::
+
+1.  Generamos las muestras independientes para ambos grupos.
+
+```{r}
+#| echo: false
+set.seed(789)
+n_est <- 200
+grupo_a <- rnorm(n_est, mean = 75, sd = 10)
+grupo_b <- rnorm(n_est, mean = 82, sd = 8)
+```
+
+2.  La media del Grupo B es 82. Calculamos cuántos estudiantes del Grupo A superan ese puntaje.
+
+```{r}
+#| echo: false
+media_b <- 82
+porcentaje_sup_a <- (1 - pnorm(media_b, mean = 75, sd = 10)) * 100
+cat("Porcentaje del Grupo A que supera la media de B:", porcentaje_sup_a, "%\n")
+```
+
+3.  Utilizamos `pnorm()` con los parámetros del Grupo B.
+
+```{r}
+#| echo: false
+prob_b_70 <- pnorm(70, mean = 82, sd = 8) * 100
+cat("Probabilidad de que un estudiante de B tenga menos de 70:", prob_b_70, "%\n")
+```
+
+*70 está a 1.5 desviaciones estándar por debajo de la media de B, por lo que la probabilidad debe rondar el 6.68%.*
+
+4.  Creamos un gráfico de densidades unificando los datos para contrastar ambas curvas.
+
+```{r}
+#| echo: false
+library(ggplot2)
+datos_examen <- data.frame(
+  Puntuacion = c(grupo_a, grupo_b),
+  Grupo = rep(c("Grupo A", "Grupo B"), each = n_est)
+)
+
+ggplot(datos_examen, aes(x = Puntuacion, fill = Grupo)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Comparación de Puntuaciones", x = "Puntuación", y = "Densidad") +
+  theme_minimal()
+```
+
+5.  Buscamos el percentil 90 para cada grupo.
+
+```{r}
+#| echo: false
+p90_a <- qnorm(0.90, mean = 75, sd = 10)
+p90_b <- qnorm(0.90, mean = 82, sd = 8)
+
+cat("Puntuación mínima para el top 10% en Grupo A:", p90_a, "\n")
+cat("Puntuación mínima para el top 10% en Grupo B:", p90_b, "\n")
+```
+
+**Análisis e interpretación de resultados:**
+
+- **Comparación de poblaciones:** Solo un 23.58% de los alumnos del Grupo A logra superar el promedio general obtenido por el Grupo B (82 puntos), evidenciando un desempeño académico superior y más homogéneo en el segundo grupo.
+
+- **Riesgo de reprobación:** La probabilidad de que un estudiante del Grupo B obtenga una calificación deficiente inferior a 70 puntos es baja (apenas un 6.68%), lo que refleja un nivel general satisfactorio en dicho grupo.
+
+- **Umbrales de excelencia:** Para pertenecer al selecto grupo del 10% superior (*top 10*), los estudiantes del Grupo A necesitan una puntuación mínima de 87.82 puntos, mientras que en el Grupo B se exige un puntaje mayor de 92.25 debido a su media más alta.
