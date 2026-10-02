@@ -1,0 +1,161 @@
+---
+title: "Análisis Exploratorio de Datos (EDA)"
+subtitle: "Evaluación Sociodemográfica y Espacial del Censo 2020 - Nuevo León"
+author: "Nataly Pamela Ramírez Cano"
+format: 
+  html:
+    grid: 
+      body-width: 950px
+lang: es
+---
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| message: false
+
+library(tidyverse)
+library(sf)          # Para datos espaciales
+library(viridis)     # Para paletas de colores
+library(janitor)    # Para limpiar nombres de columnas
+library(scales)     # Para mejorar ejes en gráficos
+
+```
+
+# Introducción y Objetivos
+
+El presente documento constituye un Análisis Exploratorio de Datos (EDA) riguroso enfocado en el estado de Nuevo León. Utilizando herramientas de estadística descriptiva univariada y representación cartográfica espacial, examinaremos la estructura demográfica, el nivel educativo, la actividad económica y las condiciones de vivienda reportadas por el Instituto Nacional de Estadística y Geografía (INEGI) a través del Censo de Población y Vivienda 2020.
+
+El propósito principal es identificar patrones territoriales, tendencias de concentración poblacional y medidas de resumen estadístico que sirvan como base para la posterior inferencia de parámetros sociodemográficos en la región.Datos espaciales de Guanajuato.
+
+# Marco Geoespacial: Municipios de Nuevo León
+
+La dimensión espacial es crucial para entender la distribución demográfica de la entidad. A continuación, se procesan los límites político-administrativos de los municipios de Nuevo León utilizando el marco geoestadístico oficial del INEGI.
+
+```{r}
+# Lectura de la capa espacial del estado (Clave 19: Nuevo León)
+municipios_nl <- st_read("data/19mun.shp", options = "ENCODING=LATIN1", quiet = TRUE)
+
+# Generación del mapa coroplético base de los municipios
+ggplot(municipios_nl) +
+  geom_sf(fill = "#d0e1fd", color = "#ffffff", linewidth = 0.4) +
+  labs(
+    title = "Distribución Político-Administrativa",
+    subtitle = paste("Total de municipios analizados:", nrow(municipios_nl)),
+    caption = "Fuente: INEGI - Marco Geoestadístico 2020"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(size = 15, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5, color = "#555555"),
+    plot.caption = element_text(size = 9, color = "#777777")
+  )
+```
+
+# Ingesta y Preparación de Datos Censales
+
+Los datos numéricos provienen de los indicadores municipales del Censo 2020. En esta fase filtramos las métricas de interés, reestructuramos el formato tabular ancho-largo (`pivot_wider`) y estandarizamos la nomenclatura de las variables para optimizar su estudio analítico.
+
+```{r}
+# Lectura del archivo CSV con manejo de valores no disponibles ("ND")
+datos_total <- read_csv("data/cpv_valor_19.csv", na = c("ND"))
+
+# Filtrado para el año censal 2020 y selección de indicadores clave
+datos_seleccion <- datos_total |> 
+  filter(
+    año == 2020,
+    indicador %in% c(
+      "Edad mediana", 
+      "Población total", 
+      "Porcentaje de la población derechohabiente en el IMSS", 
+      "Porcentaje de viviendas con electricidad",
+      "Porcentaje de viviendas particulares habitadas que disponen de Internet",
+      "Porcentaje de población de 12 años y más económicamente activa",
+      "Porcentaje de la población de 15 años y más con instrucción media superior"
+    ), 
+    desc_municipio != "Estatal"
+  ) |> 
+  select(desc_municipio, indicador, valor)
+
+# Transformación de filas a columnas y limpieza de etiquetas
+datos <- datos_seleccion |>
+  pivot_wider(names_from = indicador, values_from = valor) |>
+  clean_names() |>
+  mutate(NOMGEO = desc_municipio) |>
+  rename(
+    electricidad = porcentaje_de_viviendas_con_electricidad,
+    media_superior = porcentaje_de_la_poblacion_de_15_anos_y_mas_con_instruccion_media_superior,
+    imss = porcentaje_de_la_poblacion_derechohabiente_en_el_imss,
+    pea = porcentaje_de_poblacion_de_12_anos_y_mas_economicamente_activa,
+    internet = porcentaje_de_viviendas_particulares_habitadas_que_disponen_de_internet
+  )
+
+# Consolidación uniendo la tabla numérica con el objeto espacial (sf)
+datos_espaciales <- left_join(municipios_nl, datos, by = "NOMGEO")
+```
+
+# Resumen Estadístico Descriptivo
+
+El análisis numérico global de las variables cuantitativas nos permite identificar tendencias centrales, asimetrías y rangos de dispersión a nivel municipal:
+
+```{r}
+summary(datos |> select(poblacion_total, edad_mediana, imss, pea, internet, media_superior))
+```
+
+# Análisis Profundo por Variable Seleccionada
+
+## Dinámica de la Población Total
+
+La población en Nuevo León presenta marcados contrastes de concentración demográfica, donde los municipios metropolitanos agrupan el mayor volumen poblacional en comparación con las zonas rurales o periféricas.
+
+```{r}
+ggplot(datos_espaciales) +
+  geom_sf(aes(fill = poblacion_total), color = "white", linewidth = 0.2) +
+  scale_fill_viridis_c(
+    name = "Habitantes",
+    trans = "log10",
+    labels = scales::comma_format()
+  ) +
+  labs(
+    title = "Concentración Demográfica Municipal",
+    subtitle = "Población total en escala logarítmica (Censo 2020)",
+    caption = "Fuente: INEGI - CPV 2020"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11),
+    legend.position = "right"
+  )
+```
+
+## Relación Económica: PEA vs. Cobertura de Seguridad Social (IMSS)
+
+Resulta de gran interés examinar cómo se relacionan la **Población Económicamente Activa (PEA)** y el porcentaje de habitantes con acceso a derechohabiencia en el IMSS mediante un modelo de regresión lineal simple:
+
+```{r}
+ggplot(datos, aes(x = pea, y = imss)) +
+  geom_point(color = "#2b5c8f", size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", color = "#d9534f", fill = "#f2dede", linewidth = 1, se = TRUE) +
+  scale_x_continuous(labels = function(x) paste0(x, "%")) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  labs(
+    title = "Asociación entre Actividad Laboral y Cobertura de Salud",
+    subtitle = "Población Económicamente Activa frente a Derechohabientes del IMSS",
+    x = "Población Económicamente Activa (PEA %)", 
+    y = "Derechohabientes IMSS (%)",
+    caption = "Fuente: Estimación basada en INEGI 2020"
+  ) +
+  theme_bw() +
+  theme(
+    plot.title = element_text(size = 13, face = "bold"),
+    axis.title = element_text(face = "bold", size = 11),
+    panel.grid.minor = element_blank()
+  )
+```
+
+# Conclusiones Generales
+
+1.  **Desigualdad Territorial:** Existe una clara heterogeneidad demográfica y de infraestructura entre los municipios urbanos centrales de Nuevo León y las zonas periféricas.
+
+2.  **Dependencia Laboral y Bienestar:** Los modelos gráficos confirman una correlación positiva directa entre los niveles de ocupación económica y el acceso institucional a la seguridad social en los municipios del estado.
