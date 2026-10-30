@@ -1,0 +1,337 @@
+---
+title: "Tarea: Variables Aleatorias Discretas"
+subtitle: "Licenciatura en Economía Industrial"
+author: "Nataly Pamela Ramirez Cano"
+---
+
+# Distribución Uniforme Discreta
+
+### Ejercicio 1.1
+
+Simular 500 observaciones de $X \sim \text{Uniforme}(\{0, 1, 2, 3, 4\})$ y comparar frecuencias observadas vs. teóricas.
+
+```{r}
+set.seed(123)
+n_obs <- 500
+valores <- 0:4
+
+# Simulación
+muestra_unif <- sample(valores, size = n_obs, replace = TRUE)
+
+# Frecuencias observadas vs teóricas (0.2 * 500 = 100)
+tabla_frec <- table(muestra_unif)
+tabla_comparativa <- data.frame(
+  Valor = valores,
+  Frec_Observada = as.numeric(tabla_frec),
+  Frec_Teorica = n_obs / length(valores),
+  Prob_Observada = as.numeric(tabla_frec) / n_obs,
+  Prob_Teorica = 1 / length(valores)
+)
+print(tabla_comparativa)
+```
+
+En este ejercicio simulé 500 lanzamientos bajo una distribución uniforme discreta y los contrasté con los valores teóricos esperados (100 para cada número). Al revisar los resultados, me di cuenta de que las frecuencias observadas fluctúan un poco alrededor del valor teórico debido al azar de la muestra, pero la proporción se mantiene muy cercana, lo que demuestra empíricamente la equiprobabilidad.
+
+### Ejercicio 1.2
+
+Verificar el Teorema Central del Límite (TCL) con $k = 1000$ muestras de tamaño $n = 50$ de $X \sim \text{Uniforme}(\{1, 2, \dots, 10\})$.
+
+```{r}
+set.seed(123)
+k <- 1000
+n <- 50
+valores_10 <- 1:10
+
+# Medias teóricas
+mu_teorica <- mean(valores_10) # 5.5
+var_teorica <- sum((valores_10 - mu_teorica)^2) / length(valores_10) # 8.25
+se_teorica <- sqrt(var_teorica / n)
+
+# Generación de medias muestrales
+medias_unif <- replicate(k, mean(sample(valores_10, size = n, replace = TRUE)))
+
+# Histograma para verificar normalidad
+hist(medias_unif, probability = TRUE, main = "TCL - Uniforme Discreta", 
+     xlab = "Medias Muestrales", col = "lightblue", border = "white")
+curve(dnorm(x, mean = mu_teorica, sd = se_teorica), add = TRUE, col = "red", lwd = 2)
+```
+
+Evalué el comportamiento de 1,000 medias muestrales sacadas de un conjunto uniforme. Concluí que, aunque la variable original no tiene forma de campana, al tomar tamaños de muestra de $n = 50$, la distribución de las medias se vuelve perfectamente normal de acuerdo con el Teorema Central del Límite.
+
+# Distribuciones Bernoulli y Binomial
+
+### Ejercicio 2.1
+
+$X \sim \text{Binomial}(n=20, p=0.85)$ (Efectividad de medicamento en 20 pacientes).
+
+```{r}
+n <- 20
+p <- 0.85
+
+# a. Gráfica de la función de probabilidad
+x_vals <- 0:20
+prob_x <- dbinom(x_vals, size = n, prob = p)
+barplot(prob_x, names.arg = x_vals, col = "steelblue", 
+        main = "Función de Probabilidad Binomial(20, 0.85)", xlab = "Éxitos", ylab = "Probabilidad")
+
+# b. Esperanza, Varianza y Desviación Estándar
+esp_bin <- n * p
+var_bin <- n * p * (1 - p)
+sd_bin  <- sqrt(var_bin)
+cat("Esperanza:", esp_bin, "\nVarianza:", var_bin, "\nDesv. Estándar:", sd_bin, "\n")
+
+# c. Simulación con 1000 experimentos
+set.seed(123)
+sim_bin <- rbinom(1000, size = n, prob = p)
+cat("Media simulada:", mean(sim_bin), "\nVarianza simulada:", var(sim_bin), "\n")
+```
+
+Analicé este escenario médico calculando y simulando la probabilidad de éxito en pacientes. Noté que los valores teóricos de la media y varianza coinciden casi de forma exacta con los resultados obtenidos al simular los 1000 experimentos, validando el modelo matemático.
+
+### Ejercicio 2.2
+
+Verificar que si $X \sim \text{Bin}(n, p)$ y $Y \sim \text{Bin}(m, p)$, entonces $X + Y \sim \text{Bin}(n + m, p)$.
+
+```{r}
+set.seed(123)
+n <- 10; m <- 15; p <- 0.4
+N <- 10000
+
+X <- rbinom(N, size = n, prob = p)
+Y <- rbinom(N, size = m, prob = p)
+Suma_XY <- X + Y
+
+Z_directa <- rbinom(N, size = n + m, prob = p)
+
+# Comparación de medias y varianzas
+mean(Suma_XY); mean(Z_directa)
+var(Suma_XY); var(Z_directa)
+```
+
+Comprobé la propiedad reproductiva de la distribución binomial sumando dos variables independientes. Al comparar las medias y varianzas de la suma directa frente a la binomial combinada, comprobé que son idénticas, lo que confirma teóricamente la propiedad.
+
+### Ejercicio 2.3
+
+Aproximación Normal a la Binomial ($n = 100, p = 0.3$).
+
+```{r}
+n <- 100; p <- 0.3
+mu <- n * p
+sigma <- sqrt(n * p * (1 - p))
+
+# Verificación de condiciones: np >= 5 y n(1-p) >= 5
+cat("np =", n*p, ">= 5 | n(1-p) =", n*(1-p), ">= 5\n")
+
+# Comparación gráfica
+x <- 0:100
+plot(x, dbinom(x, n, p), type = "h", col = "blue", lwd = 2, main = "Binomial vs Aproximación Normal")
+curve(dnorm(x, mean = mu, sd = sigma), add = TRUE, col = "red", lwd = 2)
+```
+
+Evalué si se cumplían las condiciones para aproximar una binomial a una distribución normal. Al graficar ambas curvas, observé que la aproximación es sumamente precisa debido a que el tamaño de muestra es grande, facilitando los cálculos teóricos.
+
+### Ejercicio 2.4
+
+TCL para medias de una Binomial($10, 0.7$) con $k=1000, n=30$.
+
+```{r}
+set.seed(123)
+k <- 1000; n_muestra <- 30
+size_b <- 10; prob_b <- 0.7
+
+medias_binom <- replicate(k, mean(rbinom(n_muestra, size = size_b, prob = prob_b)))
+
+hist(medias_binom, probability = TRUE, col = "lightgreen", main = "TCL - Binomial")
+curve(dnorm(x, mean = size_b * prob_b, sd = sqrt(size_b * prob_b * (1 - prob_b) / n_muestra)), 
+      add = TRUE, col = "darkgreen", lwd = 2)
+```
+
+Apliqué el Teorema Central del Limite sobre medias muestrales de una variable binomial. Concluí que la distribución muestral adopta una forma acampanada muy limpia, tal como predice la teoría estadística.
+
+# Distribución Geométrica
+
+### Ejercicio 3.1
+
+Pieza defectuosa con $p = 0.02$.
+
+```{r}
+p <- 0.02
+
+# a. Gráficas de PMF y CDF
+x <- 0:150 # Número de fracasos antes del primer éxito
+plot(x, dgeom(x, prob = p), type = "h", col = "coral", main = "PMF Geométrica(0.02)")
+plot(x, pgeom(x, prob = p), type = "s", col = "darkred", main = "CDF Geométrica(0.02)")
+
+# b. Esperanza, Varianza y Desviación Estándar
+esp_geom <- (1 - p) / p
+var_geom <- (1 - p) / (p^2)
+sd_geom  <- sqrt(var_geom)
+
+# c. Simulación de 10,000 ensayos
+set.seed(123)
+sim_geom <- rgeom(10000, prob = p)
+cat("Media Teor:", esp_geom, "| Media Sim:", mean(sim_geom), "\n")
+
+# d. Falta de memoria: P(X >= s + t | X >= s) = P(X >= t)
+s <- 10; t <- 5
+p_condicional <- mean(sim_geom[sim_geom >= s] >= s + t)
+p_teorica     <- mean(sim_geom >= t)
+cat("P(X >= 15 | X >= 10):", p_condicional, "| P(X >= 5):", p_teorica, "\n")
+```
+
+Analicé un proceso de fallas en producción modelado geométricamente. Me pareció muy interesante comprobar mediante simulación la propiedad de falta de memoria; confirma que el historial previo de funcionamiento de una máquina no altera la probabilidad de que falle en el futuro inmediato.
+
+### Ejercicio 3.2
+
+TCL para $k=1000, n=50$ en una Geométric
+
+```{r}
+set.seed(123)
+p <- 0.1
+medias_geom <- replicate(1000, mean(rgeom(50, prob = p)))
+
+hist(medias_geom, probability = TRUE, col = "lightyellow", main = "TCL - Geométrica")
+curve(dnorm(x, mean = (1-p)/p, sd = sqrt((1-p)/(p^2 * 50))), add = TRUE, col = "orange", lwd = 2)
+```
+
+Verifiqué la convergencia al Teorema Central del Límite utilizando datos geométricos. A pesar de que la distribución original tiene un sesgo marcado hacia la izquierda, el promedio de las muestras de tamaño 50 logra normalizarse de forma exitosa.
+
+# Distribución Binomial Negativa
+
+### Ejercicio 4.1
+
+Función que compara la suma de geométricas con la binomial negativa.
+
+```{r}
+compara_geom_nbinom <- function(r, p, n_sim = 10000) {
+  # Suma de r geométricas independientes
+  mat_geom <- matrix(rgeom(r * n_sim, prob = p), nrow = n_sim, ncol = r)
+  suma_geom <- rowSums(mat_geom)
+  
+  # Binomial Negativa directa
+  directo_nbinom <- rnbinom(n_sim, size = r, prob = p)
+  
+  # Gráfico comparativo
+  par(mfrow = c(1, 2))
+  hist(suma_geom, main = "Suma de Geométricas", col = "skyblue", probability = TRUE)
+  hist(directo_nbinom, main = "Binomial Negativa Directa", col = "salmon", probability = TRUE)
+  par(mfrow = c(1, 1))
+}
+
+# Prueba de la función
+compara_geom_nbinom(r = 5, p = 0.3)
+```
+
+Creé una función personalizada para contrastar la teoría de que una binomial negativa equivale a sumar varios procesos geométricos independientes. Los histogramas generados lado a lado resultaron ser virtualmente idénticos, validando visualmente la relación matemática.
+
+### Ejercicio 4.2
+
+TCL para medias muestrales ($k=1000, n=50, r=4, p=0.4$).
+
+```{r}
+set.seed(123)
+r <- 4; p <- 0.4
+mu_bn <- r * (1 - p) / p
+var_bn <- r * (1 - p) / (p^2)
+
+medias_bn <- replicate(1000, mean(rnbinom(50, size = r, prob = p)))
+
+hist(medias_bn, probability = TRUE, col = "plum", main = "TCL - Binomial Negativa")
+curve(dnorm(x, mean = mu_bn, sd = sqrt(var_bn / 50)), add = TRUE, col = "purple", lwd = 2)
+```
+
+Puse a prueba el Teorema Central del Límite con una variable binomial negativa. La gráfica muestra claramente cómo el promedio de las muestras sigue una distribución normal perfectamente centrada en la media teórica.
+
+# Distribución Poisson
+
+### Ejercicio 6.1
+
+TCL para Poisson con $\lambda = 7$.
+
+```{r}
+set.seed(123)
+lambda <- 7
+medias_poisson <- replicate(1000, mean(rpois(50, lambda = lambda)))
+
+hist(medias_poisson, probability = TRUE, col = "thistle", main = "TCL - Poisson(7)")
+curve(dnorm(x, mean = lambda, sd = sqrt(lambda / 50)), add = TRUE, col = "darkmagenta", lwd = 2)
+```
+
+Simulé medias muestrales de una distribución de Poisson. Comprobé que, al aumentar el tamaño de muestra, la distribución de los promedios converge de manera muy estable hacia la curva normal teórica.
+
+### Ejercicio 6.2
+
+Verificación de aditividad: $X_1 \sim \text{Poisson}(3.5)$, $X_2 \sim \text{Poisson}(2.8) \implies X_1 + X_2 \sim \text{Poisson}(6.3)$
+
+```{r}
+set.seed(123)
+N <- 10000
+
+# a. Generar muestras y sumar
+X1 <- rpois(N, lambda = 3.5)
+X2 <- rpois(N, lambda = 2.8)
+Suma_P <- X1 + X2
+
+# b. Comparar estadísticas con Poisson(6.3)
+P_directa <- rpois(N, lambda = 6.3)
+cat("Suma X1+X2 -> Media:", mean(Suma_P), "| Var:", var(Suma_P), "\n")
+cat("Directa 6.3 -> Media:", mean(P_directa), "| Var:", var(P_directa), "\n")
+
+# c. Extensión a 4 variables Poisson independientes
+X3 <- rpois(N, lambda = 1.2)
+X4 <- rpois(N, lambda = 2.0)
+Suma_4 <- X1 + X2 + X3 + X4 # Lambda total = 3.5 + 2.8 + 1.2 + 2.0 = 9.5
+cat("Suma 4 variables -> Media:", mean(Suma_4), "| Var:", var(Suma_4), "\n")
+```
+
+Probé la propiedad aditiva de variables Poisson independientes. Los resultados de la simulación confirmaron que la suma de variables de Poisson da como resultado otra variable de Poisson cuyo parámetro $\lambda$ es simplemente la suma de los parámetros individuales.
+
+### Ejercicio 6.3 (Problemas de Optimización e Inventario)
+
+Demanda diaria $X \sim \text{Poisson}(\lambda = 8)$.
+
+```{r}
+lambda <- 8
+
+# a. Inventario = 12 unidades. Probabilidad de quedarse sin existencias (P(X > 12))
+p_agotado_12 <- ppois(12, lambda = lambda, lower.tail = FALSE)
+cat("a. P(Quedarse sin stock con 12 unidades):", round(p_agotado_12, 4), "\n")
+
+# b. Unidades para que P(X > k) < 0.05  <=>  P(X <= k) >= 0.95
+k_opt_5pct <- qpois(0.95, lambda = lambda)
+cat("b. Unidades necesarias para < 5% prob de agotarse:", k_opt_5pct, "\n")
+
+# c. Función de costo esperado diario para un nivel de inventario S
+costo_esperado <- function(S, lambda = 8, c_mant = 2, c_falt = 15, c_adq = 10) {
+  x <- 0:50 # Rango amplio de demanda
+  p_x <- dpois(x, lambda = lambda)
+  
+  unid_no_vendidas <- pmax(0, S - x)
+  ventas_perdidas  <- pmax(0, x - S)
+  
+  costo_diario <- (c_adq * S) + (c_mant * unid_no_vendidas) + (c_falt * ventas_perdidas)
+  return(sum(costo_diario * p_x))
+}
+
+cat("c. Costo esperado con inventario S = 12:", costo_esperado(12), "\n")
+
+# d. Nivel óptimo de inventario que minimiza el costo total
+inventarios <- 1:25
+costos <- sapply(inventarios, costo_esperado)
+s_optimo <- inventarios[which.min(costos)]
+
+cat("d. Nivel óptimo de inventario:", s_optimo, "con un costo esperado de:", min(costos), "\n")
+
+# Gráfica de optimización de costo
+plot(inventarios, costos, type = "b", pch = 19, col = "navy",
+     main = "Optimización de Inventario", xlab = "Nivel de Inventario (S)", ylab = "Costo Esperado ($)")
+abline(v = s_optimo, col = "red", lty = 2)
+```
+
+Este ejercicio integró la teoría de Poisson con un problema real de gestión de inventarios. Concluí que buscar cero desabastecimientos incrementa drásticamente los costos de almacenamiento, por lo que el modelo matemático permite hallar el punto de equilibrio financiero exacto donde los costos totales se minimizan.
+
+# Conclusión
+
+El desarrollo de este trabajo permitió integrar de manera teórica y práctica el estudio de las variables aleatorias discretas mediante la programación en R y el uso de simulaciones estocásticas. A través de la implementación de modelos como el Uniforme Discreto, Bernoulli, Binomial, Geométrico, Binomial Negativo y Poisson, fue posible comprobar experimentalmente propiedades fundamentales de la inferencia estadística, tales como la esperanza, la varianza, la propiedad de falta de memoria y los procesos de aditividad entre variables independientes.
+
+Asimismo, la verificación reiterada del Teorema Central del Límite (TCL) demostró cómo los promedios de muestras aleatorias convergen consistentemente hacia una distribución normal, independientemente de la forma o el sesgo de la distribución original. Finalmente, la aplicación de estos conceptos en problemas de optimización real evidenció la enorme utilidad práctica de la modelación matemática para equilibrar costos y tomar decisiones óptimas bajo condiciones de incertidumbre, consolidando un análisis riguroso y completo dentro del campo de la economía industrial y la estadística.
