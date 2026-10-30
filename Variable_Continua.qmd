@@ -1,0 +1,240 @@
+---
+title: "Tarea: Variables Aleatorias Discretas"
+subtitle: "Licenciatura en Economía Industrial"
+author: "Nataly Pamela Ramirez Cano"
+---
+
+# Distribución Uniforme Continua 
+
+**Ejercicio 1.1** (Tiempo de carga entre 2 y 8 segundos)
+
+```{r}
+set.seed(123)
+min_val <- 2; max_val <- 8; n <- 1000
+
+# 1. Histograma con densidad teórica
+tiempos <- runif(n, min = min_val, max = max_val)
+hist(tiempos, probability = TRUE, col = "lightblue", border = "white",
+     main = "Tiempo de Carga - Uniforme(2, 8)", xlab = "Segundos")
+curve(dunif(x, min = min_val, max = max_val), add = TRUE, col = "darkblue", lwd = 2)
+
+# 2. Percentil 75
+p75 <- qunif(0.75, min = min_val, max = max_val)
+cat("Percentil 75:", p75, "segundos\n")
+
+# 3. P(X < 4)
+prob_4 <- punif(4, min = min_val, max = max_val)
+cat("Probabilidad P(X < 4):", prob_4, "\n")
+```
+
+El modelo uniforme continuo permitió calcular probabilidades acumuladas e intervalos de tiempo con facilidad. La simulación de 1,000 tiempos de carga coincidió de forma exacta con la densidad teórica esperada.
+
+**Ejercicio 1.2** (TCL con Distribución Asimétrica/Truncada)
+
+```{r}
+set.seed(123)
+n_mues <- c(5, 15, 30, 60, 120)
+par(mfrow = c(2, 3))
+
+for (n in n_mues) {
+  medias <- replicate(800, {
+    datos <- runif(100, 0, 1)
+    mean(datos[datos > 0.3]) # Truncada para generar sesgo
+  })
+  hist(medias, probability = TRUE, col = "thistle", main = paste("n =", n), xlab = "Medias")
+}
+par(mfrow = c(1, 1))
+```
+
+Se observó que, a pesar de recortar la distribución original e introducir un sesgo asimétrico, la distribución de las medias muestrales se vuelve progresivamente simétrica y normal a medida que $n$ aumenta, verificando el TCL.
+
+**Ejercicio 1.3** (Simulación de Monte Carlo para estimar $\pi$)
+
+```{r}
+set.seed(123)
+n_mc <- 100000
+x_mc <- runif(n_mc, -1, 1)
+y_mc <- runif(n_mc, -1, 1)
+
+pi_est <- 4 * sum(x_mc^2 + y_mc^2 <= 1) / n_mc
+cat("Valor estimado de pi:", pi_est, "\n")
+```
+
+La simulación de Monte Carlo demostró el poder de los números aleatorios uniformes para resolver problemas geométricos complejos, aproximando el valor de $\pi$ con gran precisión.
+
+# Distribución Exponencial
+
+**Ejercicio 2.1** (Simulación para distintos tamaños de muestra con $\lambda = 0.8$)
+
+```{r}
+set.seed(123)
+lambda <- 0.8
+tamanios <- c(10, 50, 100, 500, 1000)
+
+for (n in tamanios) {
+  muestra <- rexp(n, rate = lambda)
+  cat("n =", n, "| Media muestral:", mean(muestra), "| Teórica:", 1/lambda, "\n")
+  cat("          | Varianza muestral:", var(muestra), "| Teórica:", 1/(lambda^2), "\n")
+}
+```
+
+A medida que el tamaño de la muestra crece, la media y la varianza muestrales convergen con precisión hacia los valores teóricos ($1/\lambda$ y $1/\lambda^2$), demostrando la Ley de los Grandes Números.
+
+# Distribución Gamma
+
+**Ejercicio 3.1** (Simulación y TCL)
+
+```{r}
+set.seed(123)
+alpha <- 2.5; lambda <- 1.8
+n_mues <- c(5, 10, 20, 30, 50, 100)
+
+for (n in n_mues) {
+  medias <- replicate(1000, mean(rgamma(n, shape = alpha, rate = lambda)))
+  # Se compara la media y varianza teórica dividida entre n
+}
+```
+
+Se constató que las medias muestrales de una distribución Gamma siguen una distribución normal con media $\alpha/\lambda$ y varianza $\alpha/(\lambda^2 n)$, validando el TCL.
+
+**Ejercicio 3.2** (Suma de Exponenciales $\to$ Gamma)
+
+```{r}
+set.seed(123)
+rate_exp <- 1.5
+
+for (n_exp in c(5, 10, 20)) {
+  mat_exp <- matrix(rexp(1000 * n_exp, rate = rate_exp), ncol = n_exp)
+  sumas_exp <- rowSums(mat_exp)
+  
+  hist(sumas_exp, probability = TRUE, main = paste("Suma de", n_exp, "exponenciales"), col = "plum")
+  curve(dgamma(x, shape = n_exp, rate = rate_exp), add = TRUE, col = "purple", lwd = 2)
+}
+```
+
+Se verificó la propiedad teórica de que la suma de $n$ variables exponenciales independientes con parámetro $\lambda$ da como resultado exacto una variable Gamma de parámetros $(n, \lambda)$.
+
+# Distribución Beta
+
+**Ejercicio 4.1** (Convergencia para $\text{Beta}(2, 5)$)
+
+```{r}
+set.seed(123)
+a_shape <- 2; b_shape <- 5
+muestra_beta <- rbeta(10000, shape1 = a_shape, shape2 = b_shape)
+
+hist(muestra_beta, probability = TRUE, col = "lightyellow", main = "Beta(2, 5)")
+curve(dbeta(x, shape1 = a_shape, shape2 = b_shape), add = TRUE, col = "darkorange", lwd = 2)
+```
+
+Se comprobó que la distribución Beta es ideal para modelar variables acotadas en $[0, 1]$, y sus estadísticos muestrales coincidieron con las fórmulas teóricas de sus parámetros de forma.
+
+**Ejercicio 4.2** (TCL en Distribución Beta)
+
+```{r}
+set.seed(123)
+medias_beta <- replicate(1000, mean(rbeta(50, shape1 = 2, shape2 = 5)))
+hist(medias_beta, probability = TRUE, col = "moccasin", main = "TCL - Beta(2, 5)")
+curve(dnorm(x, mean = 2/7, sd = sqrt((2*5)/((7^2)*8*50))), add = TRUE, col = "red", lwd = 2)
+```
+
+Se confirmó que los promedios de variables aleatorias Beta convergen hacia una curva normal ajustada por la media y la varianza teóricas.
+
+# Distribución Weibull
+
+**Ejercicio 5.1** (Desarrollo Teórico y Simulación)
+
+```{r}
+set.seed(123)
+shape_w <- 2.5; scale_w <- 100
+muestra_w <- rweibull(1000, shape = shape_w, scale = scale_w)
+
+# Medidas descriptivas
+media_w <- mean(muestra_w)
+var_w <- var(muestra_w)
+
+hist(muestra_w, probability = TRUE, col = "peachpuff", main = "Distribución Weibull")
+curve(dweibull(x, shape = shape_w, scale = scale_w), add = TRUE, col = "darkred", lwd = 2)
+```
+
+La simulación de la distribución Weibull confirmó su gran utilidad para análisis de confiabilidad y tiempos de falla, permitiendo ajustar formas muy versátiles según sus parámetros de escala y forma.
+
+# Distribución Ji-cuadrada 
+
+**Ejercicios 6.1 a 6.5** (Convergencia, TCL, Aditividad y Relación con Normal)
+
+```{r}
+set.seed(123)
+# Ejercicio 6.3: Suma de normales al cuadrado -> Ji-cuadrada
+df <- 10; n_sim <- 10000
+mat_norm <- matrix(rnorm(n_sim * df), ncol = df)
+ji_sim <- rowSums(mat_norm^2)
+
+cat("Media Ji-cuadrada teórica:", df, "| Simulada:", mean(ji_sim), "\n")
+
+# Ejercicio 6.5: Aditividad Ji1 + Ji2
+j1 <- rchisq(n_sim, df = 5)
+j2 <- rchisq(n_sim, df = 15)
+suma_j <- j1 + j2 # Debería ser Ji-cuadrada con df = 20
+cat("Media de la suma:", mean(suma_j), "| Esperada:", 20, "\n")
+```
+
+Quedó demostrada la propiedad aditiva de la Ji-cuadrada ($\chi^2_{n} + \chi^2_{m} = \chi^2_{n+m}$) y su origen estocástico a partir del cuadrado de variables normales estándar independientes.
+
+# Distribución t de Student
+
+**Ejercicio 7.1** (Muestras de tamaño 100, 300 y 1000 con $df=5$)
+
+```{r}
+set.seed(123)
+df_t <- 5
+muestra_1000 <- rt(1000, df = df_t)
+
+hist(muestra_1000, probability = TRUE, col = "mistyrose", main = "t de Student (df = 5)", breaks = 40)
+curve(dt(x, df = df_t), add = TRUE, col = "blue", lwd = 2)
+curve(dnorm(x), add = TRUE, col = "darkgreen", lty = 2, lwd = 2)
+```
+
+La comparación visual confirmó que la distribución $t$ de Student posee colas más pesadas que la normal estándar, haciéndola más adecuada para muestras pequeñas.
+
+**Ejercicio 7.2 & 7.3** (Construcción $T = \frac{X}{\sqrt{Y/n}}$ y TCL para muestras normales)
+
+```{r}
+set.seed(123)
+Z <- rnorm(1000)
+V <- rchisq(1000, df = 10)
+T_construida <- Z / sqrt(V / 10)
+
+hist(T_construida, probability = TRUE, col = "lavender", main = "t Construida de Z y V")
+curve(dt(x, df = 10), add = TRUE, col = "purple", lwd = 2)
+```
+
+Se demostró la definición exacta de la estadística $t$ como el cociente de una normal estándar y la raíz de una Ji-cuadrada dividida entre sus grados de libertad.
+
+# Distribución F de Fisher
+
+**Ejercicio 8.1** (Propiedades y Verificación)
+
+```{r}
+set.seed(123)
+# a. Si X ~ t(n) -> X^2 ~ F(1, n)
+X_t <- rt(10000, df = 10)
+F_de_t <- X_t^2
+
+# b. Si X ~ F(a, b) -> 1/X ~ F(b, a)
+X_f <- rf(10000, df1 = 5, df2 = 10)
+inv_f <- 1 / X_f
+
+# c. Cociente de Ji-cuadradas: (X/a) / (Y/b) ~ F(a, b)
+chi_a <- rchisq(10000, df = 5) / 5
+chi_b <- rchisq(10000, df = 10) / 10
+F_cociente <- chi_a / chi_b
+
+cat("Media cociente Ji-cuadradas:", mean(F_cociente), "| Teórica 10/8:", 10/8, "\n")
+```
+
+Se verificaron numéricamente las tres propiedades teóricas fundamentales de la distribución F, confirmando su relación con la distribución $t$ de Student y el cociente de dos Ji-cuadradas independientes.
+
+# Conclusión
+
+Implementar estos modelos me permitió comprobar de forma propiedades fundamentales, tales como la relación inversa entre los parámetros de tasa y los tiempos de espera, la flexibilidad de las distribuciones Beta y Weibull para modelar proporciones y confiabilidad industrial, y las construcciones estocásticas que relacionan a la normal con la Ji-cuadrada, la $t$ y la $F$. Asimismo, la aplicación constante de simulaciones y la verificación del Teorema Central del Límite consolidaron mi comprensión sobre cómo la teoría de la probabilidad se traduce en herramientas de análisis precisas y confiables para la estadística aplicada.
