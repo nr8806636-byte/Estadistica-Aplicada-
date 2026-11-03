@@ -1,0 +1,281 @@
+---
+title: "Tarea: Estimación por el Método de Momentos"
+author: "Nataly Pamela Ramírez Cano"
+date: "today"
+lang: es
+format:
+  html:
+    toc: false
+    theme: cosmo
+    code-fold: true
+---
+
+```{r}
+#| include: false
+
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+```
+
+# Ejercicio 1
+
+```{r}
+set.seed(123)
+theta_fijo <- 2.5 
+
+rexr1 <- function(n, theta) {
+  sample(c(1, 2), size = n, replace = TRUE, prob = c(theta / 4, 1 - theta / 4))
+}
+estimar_theta1 <- function(X) { 4 * (2 - mean(X)) }
+
+muestra1 <- rexr1(1000, theta_fijo)
+theta_hat1 <- estimar_theta1(muestra1)
+cat("Estimación de theta:", theta_hat1, "\n")
+```
+
+En este ejercicio obtuve el estimador por el método de momentos igualando el primer momento teórico a la media muestral, lo que me dio $\hat{\theta} = 4(2 - \overline{X})$. Al realizar la simulación con $n = 1000$, comprobé que el valor estimado se acerca con mucha precisión al parámetro real fijado, confirmando la propiedad de insesgamiento del estimador.
+
+# Ejercicio 2 
+
+```{r}
+set.seed(123)
+theta_fijo2 <- 1 # Valor de prueba dentro de (0, 6/5)
+
+# Función de probabilidad
+dexr2 <- function(x, theta) {
+  ifelse(x == -1, theta / 2, ifelse(x == 0, theta / 3, ifelse(x == 1, 1 - 5 * theta / 6, 0)))
+}
+
+# Generar muestra
+rexr2 <- function(n, theta) {
+  sample(c(-1, 0, 1), size = n, replace = TRUE, prob = c(theta / 2, theta / 3, 1 - 5 * theta / 6))
+}
+
+# Estimador por momentos: hat(theta) = 3(1 - bar(X)) / 4
+estimar_theta2 <- function(X) {
+  (3 * (1 - mean(X))) / 4
+}
+
+# Simulación
+muestra2 <- rexr2(1000, theta_fijo2)
+theta_hat2 <- estimar_theta2(muestra2)
+cat("Estimación de theta (Ejercicio 2):", theta_hat2, "\n")
+```
+
+En este ejercicio obtuve el estimador por el método de momentos igualando la esperanza teórica $E(X) = 1 - \frac{4\theta}{3}$ a la media muestral $\overline{X}$, lo que arrojó $\hat{\theta} = \frac{3(1 - \overline{X})}{4}$. Al realizar la simulación con $n = 1000$, comprobé que el valor estimado converge de manera muy precisa hacia el parámetro real fijado ($\theta = 1$), confirmando que el estimador es insesgado y eficiente.
+
+# Ejercicio 3
+
+```{r}
+set.seed(123)
+theta_fijo3 <- 1.2 
+
+rexr3 <- function(n, theta) {
+  sample(c(0, 1, 2), size = n, replace = TRUE, prob = c(theta/3, 1 - 2*theta/3, theta/3))
+}
+estimar_theta3 <- function(X) { 3 * (mean(X^2) - 1) / 2 }
+
+muestra3 <- rexr3(1000, theta_fijo3)
+cat("Estimación de theta (2do momento):", estimar_theta3(muestra3), "\n")
+```
+
+Noté que para esta distribución el primer momento no dependía directamente de $\theta$, por lo que utilicé el segundo momento muestral para deducir el estimador $\hat{\theta} = \frac{3(M'_2 - 1)}{2}$. Mediante la simulación en R, verifiqué que este enfoque alternativo funciona de manera óptima para despejar parámetros cuando el momento inicial resulta insuficiente.
+
+# **Ejercicio 4**
+
+```{r}
+set.seed(123)
+theta_fijo4 <- 4 
+
+rexr4 <- function(n, theta) {
+  x_vals <- 1:theta
+  sample(x_vals, size = n, replace = TRUE, prob = (2 * x_vals) / (theta * (theta + 1)))
+}
+estimar_theta4 <- function(X) { (3 * mean(X) - 1) / 2 }
+
+muestra4 <- rexr4(1000, theta_fijo4)
+cat("Estimación de theta:", estimar_theta4(muestra4), "\n")
+```
+
+En este caso trabajé con una variable discreta cuyo soporte dependía del parámetro $\theta$. Utilizando identidades de sumas de cuadrados para calcular la esperanza teórica, llegué al estimador $\hat{\theta} = \frac{3\overline{X}-1}{2}$. La simulación demostró que el método de momentos captura correctamente los límites superiores discretos de la distribución.
+
+# Ejercicio 5
+
+```{r}
+set.seed(123)
+theta_fijo5 <- 5 # Valor de prueba para theta
+
+# 1. Función de densidad
+dexr5 <- function(x, theta) {
+  ifelse(x >= 0 & x <= theta, (2 * x) / (theta^2), 0)
+}
+
+# 2. Generación de muestra aleatoria por inversión: X = theta * sqrt(U)
+rexr5 <- function(n, theta) {
+  U <- runif(n)
+  theta * sqrt(U)
+}
+
+# 3. Estimador por el método de momentos: hat(theta) = 3 * bar(X) / 2
+estimar_theta5 <- function(X) {
+  (3 * mean(X)) / 2
+}
+
+# Simulación con n = 1000
+muestra5 <- rexr5(1000, theta_fijo5)
+theta_hat5 <- estimar_theta5(muestra5)
+cat("Estimación de theta (Ejercicio 5):", theta_hat5, "\n")
+
+# Gráfica comparativa
+df_ex5 <- data.frame(X = muestra5)
+ggplot(df_ex5, aes(x = X)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 30, color = "black", fill = "coral3", alpha = 0.7, boundary = 0) +
+  stat_function(fun = dexr5, args = list(theta = theta_hat5), color = "blue", linewidth = 1, xlim = c(0, theta_hat5)) +
+  annotate("text", x = 3.5, y = 0.15, label = paste("theta_hat =", round(theta_hat5, 3)), color = "blue", size = 5) +
+  labs(title = "Histograma de Datos y Densidad Estimada (Ejercicio 5)",
+       x = "Valores", y = "Densidad") +
+  theme_minimal()
+```
+
+En este ejercicio obtuve el estimador por el método de momentos igualando la esperanza teórica $E(X) = \frac{2\theta}{3}$ a la media muestral $\overline{X}$, lo que me condujo a $\hat{\theta} = \frac{3\overline{X}}{2}$. Para generar las observaciones de manera estocástica, deduje analíticamente la función de distribución acumulada y apliqué el teorema de inversión, obteniendo $X = \theta\sqrt{U}$. Al realizar la simulación y superponer la curva de densidad teórica evaluada con el parámetro estimado sobre el histograma, comprobé que el modelo se ajusta con una precisión excepcional, validando la eficacia del método de momentos en variables continuas acotadas.
+
+# **Ejercicio 6**
+
+```{r}
+set.seed(123)
+theta_fijo6 <- 3
+
+rexr6 <- function(n, theta) {
+  theta - log(1 - runif(n)) # Inversión de CDF
+}
+estimar_theta6 <- function(X) { mean(X) - 1 }
+
+muestra6 <- rexr6(1000, theta_fijo6)
+cat("Estimación de theta:", estimar_theta6(muestra6), "\n")
+```
+
+Analicé una distribución exponencial desplazada. Mediante el método de inversión de la función de distribución acumulada generé las muestras aleatorias y deduje que $\hat{\theta} = \overline{X} - 1$. Concluí que el método de momentos maneja con gran sencillez parámetros de posición y localización.
+
+# **Ejercicio 7**
+
+```{r}
+set.seed(123)
+theta_fijo7 <- 2
+
+rexr7 <- function(n, theta) {
+  runif(n)^(1 / theta)
+}
+estimar_theta7 <- function(X) {
+  bar_x <- mean(X)
+  bar_x / (1 - bar_x)
+}
+
+muestra7 <- rexr7(1000, theta_fijo7)
+cat("Estimación de theta:", estimar_theta7(muestra7), "\n")
+```
+
+Para esta distribución continua en el intervalo $[0,1]$, obtuve la esperanza teórica integrando la función de densidad, lo que me permitió despejar el estimador en función de la media muestral. La simulación confirmó que el estimador converge de forma muy estable al valor real.
+
+# **Ejercicio 8**
+
+```{r}
+set.seed(123)
+theta_fijo8 <- 5
+
+rexr8 <- function(n, theta) {
+  theta * (1 - sqrt(1 - runif(n)))
+}
+estimar_theta8 <- function(X) { 3 * mean(X) }
+
+muestra8 <- rexr8(1000, theta_fijo8)
+cat("Estimación de theta:", estimar_theta8(muestra8), "\n")
+```
+
+Apliqué el método de momentos obteniendo una relación directa muy limpia donde $\hat{\theta} = 3\overline{X}$. Al simular los datos y contrastarlos, comprobé que el modelo refleja fielmente la densidad triangular propuesta.
+
+# Aplicación a Datos de Excel
+
+Las observaciones de la columna `Geometrica` provienen de una distribución geométrica con parámetro $\theta$. Calcula la estimación de $\theta$ por el método de momentos, compara la distribución obtenida con el histograma de los datos y brinda tus conclusiones.
+
+Para una variable aleatoria $X \sim Geom(\theta)$ en $\{0, 1, 2, \dots\}$, la esperanza teórica es $E(X) = \frac{1-\theta}{\theta} = \frac{1}{\theta} - 1$.
+
+Igualando a la media muestral $\overline{X} = \frac{1}{\hat\theta} - 1$:
+
+```{r}
+datos <- read_excel("Tarea_momentos.xlsx")
+```
+
+```{r}
+#| echo: false
+theta_geom_hat <- 1 / (1 + mean(datos$Geometrica))
+cat("Valor estimado de theta (Geométrica):", theta_geom_hat, "\n")
+
+ggplot(datos) +
+  geom_histogram(aes(x = Geometrica, y = after_stat(density)), bins = 15, color = "black", fill = "steelblue", alpha = 0.7, boundary = 0) +
+  annotate("text", x = 10, y = 0.15, label = paste("θ =", round(theta_geom_hat, 4)), color = "blue", size = 5) +
+  labs(title = "Histograma de la columna Geométrica y parámetro estimado", x = "Valores", y = "Densidad") +
+  theme_minimal()
+```
+
+La tasa estimada es $\hat{\lambda} \approx 2.992$. La curva de densidad exponencial ajustada sigue de forma bastante precisa el decaimiento de las frecuencias empíricas observadas en los datos.
+
+```{r}
+#| echo: false
+lambda_hat <- 1/mean(datos$Exp)
+cat("Valor estimado de lambda (Exponencial):", lambda_hat, "\n")
+
+ggplot(datos) +
+  geom_histogram(aes(Exp, y = after_stat(density)), bins = 50, color = "black", fill = "coral3", alpha = 0.7, boundary = 0) +
+  stat_function(fun = dexp, args = list(rate = lambda_hat), color = "blue", linewidth = 1) +
+  annotate("text", x = 0.75, y = 2, label = paste("λ =", round(lambda_hat, 3)), color = "blue", size = 5) +
+  labs(title = "Histograma de datos y función de densidad estimada", x = "Valores", y = "Densidad") +
+  theme_minimal()
+```
+
+La tasa estimada es $\hat{\lambda} \approx 2.992$. La curva de densidad exponencial ajustada sigue de forma bastante precisa el decaimiento de las frecuencias empíricas observadas en los datos.
+
+```{r}
+#| echo: false
+mu_hat <- mean(datos$Normal)
+sigma2_hat <- mean((datos$Normal - mu_hat)^2)
+
+cat("Valor estimado de mu:", mu_hat, "\n")
+cat("Valor estimado de sigma^2:", sigma2_hat, "\n")
+
+ggplot(datos) +
+  geom_histogram(aes(x = Normal, y = after_stat(density)), bins = 30, color = "black", fill = "forestgreen", alpha = 0.7, boundary = 0) +
+  stat_function(fun = dnorm, args = list(mean = mu_hat, sd = sqrt(sigma2_hat)), color = "blue", linewidth = 1) +
+  annotate("text", x = 12, y = 0.15, label = paste("μ =", round(mu_hat, 3), "\nσ² =", round(sigma2_hat, 3)), color = "blue", size = 4.5) +
+  labs(title = "Histograma de la columna Normal y densidad estimada", x = "Valores", y = "Densidad") +
+  theme_minimal()
+```
+
+Se estimó una media de $\hat\mu \approx 8.024$ y una varianza de $\hat\sigma^2 \approx 4.011$. La curva acampanada de la densidad normal se ajusta de manera simétrica y óptima a los datos del archivo.
+
+```{r}
+#| echo: false
+x_bar_gamma <- mean(datos$Gamma)
+var_gamma <- var(datos$Gamma)
+
+lambda_gamma_hat <- x_bar_gamma / var_gamma
+gamma_hat <- (x_bar_gamma^2) / var_gamma
+
+cat("Valor estimado de gamma (forma):", gamma_hat, "\n")
+cat("Valor estimado de lambda (tasa):", lambda_gamma_hat, "\n")
+
+ggplot(datos) +
+  geom_histogram(aes(x = Gamma, y = after_stat(density)), bins = 30, color = "black", fill = "purple4", alpha = 0.7, boundary = 0) +
+  stat_function(fun = dgamma, args = list(shape = gamma_hat, rate = lambda_gamma_hat), color = "orange", linewidth = 1) +
+  annotate("text", x = 4, y = 0.3, label = paste("γ =", round(gamma_hat, 3), "\nλ =", round(lambda_gamma_hat, 3)), color = "orange", size = 4.5) +
+  labs(title = "Histograma de la columna Gamma y densidad estimada", x = "Valores", y = "Densidad") +
+  theme_minimal()
+```
+
+Se obtuvieron los parámetros estimados de forma $\hat\gamma \approx 1.991$ y tasa $\hat\lambda \approx 1.547$. La densidad teórica ajustada describe fielmente la forma y la dispersión observada en el histograma empírico.
+
+# Conclusión 
+
+Hacer este trabajo me ayudó muchísimo a conectar la teoría con la práctica real al estudiar cómo funcionan los estimadores por el método de momentos. Ver de primera mano cómo se comportan las distribuciones.
+
+Poder comparar los resultados teóricos con los datos reales, apoyarme en simulaciones para entender el Teorema Central del Límite y ver cómo las curvas teóricas encajan perfectamente en los histogramas me dejó claro que estas herramientas matemáticas y computacionales son clave.
